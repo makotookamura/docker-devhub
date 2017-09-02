@@ -18,7 +18,6 @@ docker-compose up -d
 ```
 
 `docker-compose up` is automaticaly pull image from dockerhub. 
-if you want to build localy, `docker build devhub:latest .` before `docker-compose up -d`
 
 ### 3. open your browser
 
