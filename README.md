@@ -22,16 +22,16 @@ docker-compose up -d
 
 http://localhost:3000
 
-## config 
+## configulation
 
 ### 1. basic authentification
 
-if you need basic authentification, change these environments in docker-compose.yml.
+if you need basic authentification, input these environments in docker-compose.yml.
 
 ```docker-compose.yml
     environment:
-      - DEVHUB_USER= # user name for basic authentification
-      - DEVHUB_PASSWORD= # password for basic authentification
+      - DEVHUB_USER= # user name for basic authentification ex) DEVHUB_USER=foo
+      - DEVHUB_PASSWORD= # password for basic authentification ex) DEVHUB_PASSWORD=bar
 ```
 
 ### 2. port
@@ -40,5 +40,5 @@ change ports in docker-compose.yml.
 
 ```docker-compose.yml
     ports: 
-      - 3000:3000 # if you change 8000:3000 access http://localhost:8000
+      - 3000:3000 # if you change 8000:3000, access http://localhost:8000
 ```
