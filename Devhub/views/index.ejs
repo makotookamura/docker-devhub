@@ -133,7 +133,7 @@
       <div class="row-fluid flipsnap">
         <div id="chat_area" class="span5">
           <div class="dummy-top-space hidden-phone"></div>
-          <div id="calendar_inner" data-bind="with: memoController" class="area-inner" style="display:none;">
+          <div id="calendar_inner" data-bind="with: memoController" class="area-inner">
             <div class="clearfix"></div>
             <div data-bind="foreach: memoViewModels">
               <div data-bind="attr: {id: 'share_memo_calendar_' + no}, visible: active">
@@ -155,7 +155,7 @@
             </div>
           </div>
 
-          <div id="chat_inner" data-bind="with: chatController" class="area-inner">
+          <div id="chat_inner" data-bind="with: chatController" class="area-inner" style="display:none;">
             <div class="chat-control">
               <div id="login_list">
                 <div id="login_list_loader"><img src="/img/loader.gif"/> Connecting...</div>
