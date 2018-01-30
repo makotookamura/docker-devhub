@@ -22,6 +22,7 @@ RUN git clone https://github.com/volpe28v/DevHub DevHub
 WORKDIR DevHub
 RUN npm install
 
+COPY ./Devhub/views/index.ejs /Devhub/views/index.ejs
 COPY start.sh /usr/local/bin
 RUN chmod 755 /usr/local/bin/start.sh
 
