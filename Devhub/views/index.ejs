@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>DevHub <%= title_name %></title>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0 user-scalable=no">
+    <meta name="description" content="DevHub">
+    <meta name="author" content="Naoki Kodama">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script type="text/javascript" src="/javascripts/html5.js"></script>
+    <![endif]-->
+
+    <script type="text/javascript">
+      var TITLE_NAME = "<%= title_name %>".replace("for ","");
+    </script>
+
+    <script type="text/javascript" src="/javascripts/devhub_bundle.js"></script>
+
+    <link href="/stylesheets/jquery-ui.min.css" media="screen" rel="stylesheet" type="text/css" />
+    <link id="devhub-style" href="/stylesheets/bootstrap.min.css" media="screen" rel="stylesheet" type="text/css" />
+    <link href="/stylesheets/devhub.min.css" media="screen" rel="stylesheet" type="text/css" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  </head>
+
+  <body id="body-main" style="padding-top: 0px">
+    <div class="modal hide fade" data-bind="with: settingViewModel" id="name_in">
+      <div class="modal-header">
+        <h3>DevHub</h3>
+      </div>
+      <div class="modal-body">
+          <div class="control-group">
+            <label class="control-label">Name</label>
+            <div class="controls">
+              <form data-bind="submit: login_action">
+                <input type="text" id="login_name" data-bind="textInput: loginName" class="span2" placeholder="Name">
+              </form>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">Avatar</label>
+            <div class="controls">
+              <div class="input-append">
+                <input type="text" id="avatar_login" data-bind="
+                  textInput: avatar,
+                  dropzoneSetting: {
+                    fileTarget: '#upload_avatar',
+                    action: function(fileName){ avatar(fileName);}
+                  }" placeholder="xxxx.jpg (option)"></input>
+                <button data-bind="click: upload_avatar" class="btn btn-small"><i class="icon-file"></i></button>
+                <img data-bind="attr: {src: avatar}" class="avatar">
+              </div>
+            </div>
+          </div>
+      </div>
+      <div class="modal-footer">
+        <button id="login" class="btn btn-primary" data-bind="click: login_action">OK</button>
+      </div>
+    </div>
+
+    <div class="navbar navbar-fixed-top hidden-phone">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <a class="brand" href="/">DevHub <%= title_name %></a>
+          <ul class="nav">
+            <% if ( menu_links.length > 0 ){ %>
+            <li class="dropdown">
+              <a href="#"
+                 class="dropdown-toggle"
+                 data-toggle="dropdown">
+                 Links 
+                <b class="caret"></b>
+              </a>
+              <ul class="dropdown-menu">
+                <% menu_links.forEach(function(val){ %>
+                <li><a href="<%= val.url %>" target="_blank"><%= val.name %></a></li>
+                <% }) %>
+              </ul>
+            </li>
+            <% } %>
+            <li><a data-bind="click: showChat" rel="tooltip" title="Chat" style="cursor: pointer"><i class="icon-white icon-comment"></i></a></li>
+            <li><a data-bind="click: memoController.showIndex" rel="tooltip" title="Memo Index" style="cursor: pointer"><i class="icon-white icon-align-left"></i></a></li>
+            <li><a data-bind="click: memoController.showCalendar" rel="tooltip" title="Memo Calendar" style="cursor: pointer"><i class="icon-white icon-calendar"></i></a></li>
+          </ul>
+
+
+          <ul class="nav pull-right">
+            <li><a id="scroll_top" data-bind="click: memoController.top" rel="tooltip" title="Scroll Top" style="cursor: pointer"><i class="icon-white icon-arrow-up"></i></a></li>
+            <li class="dropdown">
+              <a class="dropdown-toggle" data-toggle="dropdown" rel="tooltip" title="Full Screen" style="cursor: pointer">
+                <i class="icon-white icon-fullscreen"></i>
+                <b class="caret"></b>
+              </a>
+              <ul class="dropdown-menu">
+                <li><a data-bind="click: fullscreen_both" href="#">Chat and Memo</a></li>
+                <li><a data-bind="click: fullscreen_chat" href="#">Chat only</a></li>
+                <li><a data-bind="click: fullscreen_memo" href="#">Memo only</a></li>
+              </ul>
+            </a></li>
+            <li><a onClick="window.open('/blog', '_blank');" rel="tooltip" title="Blog Page"><i class="icon-white icon-book"></i></a></li>
+            <li><a onClick="window.open('/upload', '_blank');" rel="tooltip" title="Uploaded Files Page"><i class="icon-white icon-file"></i></a></li>
+            <li><a data-bind="click: showSetting" rel="tooltip" title="Settings"><i class="icon-white icon-cog"></i></a></li>
+          </ul>
+
+          <div id="search_box" data-bind="with: memoController">
+            <form id="search_form" class="navbar-form pull-right" data-bind="submit: do_search">
+              <input type="text" class="search-query input-small" placeholder="Search Memo" data-bind="textInput: keyword">
+              <i id="search_clear" class="icon-remove" data-bind="click: do_search_clear"></i>
+            </form>
+
+            <form id="matched_control" class="navbar-form pull-right">
+              <div class="btn-group">
+                <button id="prev_match" class="btn btn-inverse" style="display: none" data-bind="click: matched_prev, visible: matched_navi_visible"><i class="icon-chevron-up icon-white"></i></button>
+                <button id="next_match" class="btn btn-inverse" style="display: none" data-bind="click: matched_next, visible: matched_navi_visible"><i class="icon-chevron-down icon-white"></i></button>
+              </div>
+            </form>
+
+            <span id="matched_title" class="navbar-text pull-right" style="display: none" data-bind="foreach: memoViewModels, visible: !matched_navi_visible()">
+              <span data-bind="decoMemoTitle: title, visible: show_title"></span>
+            </span>
+            <span id="matched_count" class="navbar-text pull-right" style="display: none" data-bind="visible: matched_navi_visible">
+              <span data-bind="decoMemoTitle: matched_title"></span>
+              <span data-bind="text: matched_index"></span>/<span data-bind="text: matched_num"></span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fluid viewport">
+      <div class="row-fluid flipsnap">
+        <div id="chat_area" class="span5">
+          <div class="dummy-top-space hidden-phone"></div>
+          <div id="calendar_inner" data-bind="with: memoController" class="area-inner" style="display:none;">
+            <div class="clearfix"></div>
+            <div data-bind="foreach: memoViewModels">
+              <div data-bind="attr: {id: 'share_memo_calendar_' + no}, visible: active">
+                <div data-bind="fullCalendar: calendarViewModel"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="index_inner" data-bind="with: memoController" class="area-inner" style="display:none;">
+            <div class="clearfix"></div>
+            <div id="share_memo_index" data-bind="foreach: memoViewModels">
+              <ul data-bind="foreach: indexes, attr: {id: 'share_memo_index_' + no, 'data-no': no}, visible: active" class="index-ul">
+                <li class="index-li" data-bind="
+                  click: function(data, event){ return $parents[1].select_index_li(data,event,$element) },
+                  event: { dblclick: function(data, event){ return $parent.selectMemoFromIndexes(data,event,$element) }}">
+                  <a><div data-bind="css: index_class, decoMemoIndex: body"></div></a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div id="chat_inner" data-bind="with: chatController" class="area-inner">
+            <div class="chat-control">
+              <div id="login_list">
+                <div id="login_list_loader"><img src="/img/loader.gif"/> Connecting...</div>
+                <span id="login_own" data-bind="with: ownName">
+                  <!-- ko if: has_avatar -->
+                  <span class="login-symbol" data-bind="click: $parent.changeLoginName, attr:{'data-name': name, title: name}" rel="tooltip"><img class="avatar" data-bind="attr:{src: avatar}"></span>
+                  <!-- /ko -->
+                  <!-- ko ifnot: has_avatar -->
+                  <span data-bind="click: $parent.changeLoginName, css: color_id, attr:{'data-name': name}"><span class="name" data-bind="text: name"></span></span>
+                  <!-- /ko -->
+                </span>
+                <span id="login_list_body" data-bind="foreach: loginElemList" style="display:inline">
+                  <!-- ko if: has_avatar -->
+                  <span class="login-symbol" data-bind="click: function(data, event){ $parent.inputLoginName(data, event, $element)}, attr:{'data-name': name, title: name}" rel="tooltip"><img class="avatar" data-bind="attr:{src: avatar}"></span>
+                  <!-- /ko -->
+                  <!-- ko ifnot: has_avatar -->
+                  <span data-bind="click: function(data, event){ $parent.inputLoginName(data, event, $element)}, css: color_id, attr:{'data-name': name}"><span class="name" data-bind="text: name"></span></span>
+                  <!-- /ko -->
+                </span>
+              </div>
+              <form id="form" class="form-inline">
+                <table>
+                  <tr>
+                    <td style="width: 100%; padding-right: 11px;">
+                      <textarea
+                        name="message"
+                        id="message"
+                        data-bind="
+                          textInput: inputMessage,
+                          textcomplete: true,
+                          autosize: true,
+                          css: {'client-command': isCommand},
+                          event: {keydown: function(data, event){ return keydownInputMessage(data, event, $element)}}"
+                        style="width: 100%; resize: vertical; height: 18px;  line-height: 18px;"
+                        rows="1" autocomplete="off" placeholder="Message or Search ('/')"></textarea>
+                    </td>
+                    <td><button id="send_button" data-bind="click: sendMessage" class="btn btn-small btn-primary">Send</button></td>
+                    <td>
+                      <input type="file" id="upload_chat" name="file" style="display:none"></input>
+                      <button id="upload_chat_button" data-bind="click: uploadFile", class="btn btn-small btn-inverse visible-phone" style="display:none">
+                        <i class="icon-upload icon-white"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </table>
+              </form>
+              <div data-bind="foreach: imagePreviews"> 
+                <div class="thumbnail">
+                  <img data-bind="attr: {src: $data}" style="max-height:100px">
+                </div>
+              </div>
+            </div>
+            <div class="chat-control-dummy" style="display:none;"></div>
+            <div id="chat_body" class="text-base-style">
+              <div id="alert_timeline">
+                <div id="mention_own_alert" class="alert" style="display:none">
+                  <button type="button" class="close" data-dismiss="alert">&times;</button>
+                  <strong>Display Mention & Own mode.
+                    <!-- ko if: hidingMessageCount() != 0 -->
+                    <span data-bind="text: hidingMessageCount"></span> new messages.
+                    <!-- /ko -->
+                  </strong>
+                </div>
+                <div id="mention_alert" class="alert alert-error" style="display:none">
+                  <button type="button" class="close" data-dismiss="alert">&times;</button>
+                  <strong>Display Mention only mode.
+                    <!-- ko if: hidingMessageCount() != 0 -->
+                    <span data-bind="text: hidingMessageCount"></span> new messages.
+                    <!-- /ko -->
+                  </strong>
+                </div>
+                <div id="filter_name_alert" class="alert alert-info" style="display:none">
+                  <button type="button" class="close" data-dismiss="alert">&times;</button>
+                  <strong>Display <span data-bind="text: filterName"></span> only mode.
+                    <!-- ko if: hidingMessageCount() != 0 -->
+                    <span data-bind="text: hidingMessageCount"></span> new messages.
+                    <!-- /ko -->
+                  </strong>
+                </div>
+                <div id="filter_word_alert" class="alert alert-success" style="display:none">
+                  <button type="button" class="close" data-dismiss="alert">&times;</button>
+                  <strong>Display <span data-bind="text: filterWord"></span> search mode.
+                    <!-- ko if: hidingMessageCount() != 0 -->
+                    <span data-bind="text: hidingMessageCount"></span> new messages.
+                    <!-- /ko -->
+                  </strong>
+                </div>
+                <div id="filter_date_alert" class="alert alert-success" style="display:none">
+                  <button type="button" class="close" data-dismiss="alert">&times;</button>
+                  <strong>Display <span data-bind="text: filterDate"></span> date search mode.
+                    <!-- ko if: filterDate() == " " -->
+                    Type yyyy/mm/dd or yyyy-mm-dd.
+                    <!-- /ko -->
+                    <!-- ko if: hidingMessageCount() != 0 -->
+                    <span data-bind="text: hidingMessageCount"></span> new messages.
+                    <!-- /ko -->
+                  </strong>
+                </div>
+              </div>
+              <div id="chat_tabbable"  class="tabbable">
+                <ul class="nav nav-tabs" data-bind="
+                  visible: chatNumber() != 1,
+                  sortable: true,
+                  foreach: chatViewModels
+                ">
+                  <li data-bind="attr: {id: 'chat_li_' + no}, css{active: isActive}">
+                    <a class="chat-tab-elem" data-bind="click: $parent.selectChatTab, event: {mouseover: $parent.focusChatTab.bind($data,$element)}, attr: {id: 'chat_tab_' + no, href: '#tab_' + no}" data-toggle="tab">
+                      <span data-bind="text: room"></span>
+                      <span data-bind="visible: mentionCount() != 0" style="display:none">
+                        <span class="label label-important" data-bind="text: mentionCount"></span>
+                      </span>
+                      <span data-bind="visible: unreadRoomCount() != 0" style="display:none">
+                        <span class="label label-warning" data-bind="text: unreadRoomCount"></span>
+                      </span>
+                      <span data-bind="visible: unreadCount() != 0" style="display:none">
+                        <span class="label label-default" data-bind="text: unreadCount"></span>
+                      </span>
+                    </a>
+                  </li>
+                </ul>
+                <div class="chat-tab-content tab-content" data-bind="foreach: chatViewModels">
+                  <div class="tab-pane" data-bind="attr: {id:'tab_' + no}">
+                    <ul data-bind="
+                      foreach: messages,
+                      click: clear_unread,
+                      attr: {id: 'list_' + no},
+                      inview: true
+                      " class="chat-list">
+                      <li data-bind="css: css, attr: {id: 'msg_' + _id, 'data-id': _id}, decoHtmlMsg: html, visible: is_visible"></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div id="message_loader">
+                <img src="/img/loader.gif"/> Loading messages...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="memo_area" class="span7 memo-area">
+          <div class="area-inner">
+            <div class="dummy-top-space hidden-phone"></div>
+            <div id="share-memo" data-bind="with: memoController">
+              <div id="share_memo_tabbable"  class="tabbable tabs-left">
+                <ul id="share_memo_nav" class="nav nav-tabs" data-bind="
+                  sortable: true,
+                  foreach: memoViewModels
+                ">
+                  <li data-bind="attr: {id:'share_memo_li_' + no, 'data-no': no}, css: {active: active}" class="share-memo-tab">
+                    <a class="share-memo-tab-elem" data-bind="attr: {id: 'share_memo_tab_' + no, href: '#share_memo_' + no, 'data-no': no}, click: $parent.select_memo_tab" data-toggle="tab" style="display:none">
+                      <span class="share-memo-title" data-bind="decoMemoTitle: title, css: {'silent-name': is_memo_empty}"></span>
+                      <div class="writer silent-name" data-bind="visible: !is_memo_empty(), text: writer, css: {'writing-name': update_timer() != null}"></div>
+                      <div>
+                        <span class="timestamp" data-bind="visible: !is_memo_empty(), attr: {'data-livestamp': latest_text().date}"></span>
+                      </div>
+                    </a>
+                  </li>
+                </ul>
+                <div class="share-memo-tab-content tab-content" data-bind="foreach: memoViewModels">
+                  <div data-bind="
+                    attr: {id: 'share_memo_' + no, 'data-no': no},
+                    css: {active: active}"
+                    class="share-memo tab-pane">
+                    <div class="memo-control">
+                      <button data-bind="click: do_edit" class="sync-text btn btn-primary" style="float: left">
+                        <i class="icon-edit icon-white"></i> Edit
+                      </button>
+                      <button data-bind="click: do_fix.bind($data, $element)" class="fix-text btn btn-info" style="float: left; display: none">
+                        <i class="icon-edit icon-white"></i> Done
+                      </button>
+                      <button data-bind="click: done_diff" class="diff-done btn btn-info" style="float: left; display: none">
+                        <i class="icon-resize-vertical icon-white"></i> Done
+                      </button>
+                      <div class="btn-group" style="float: left">
+                        <a class="btn dropdown-toggle diff-button hidden-phone" data-toggle="dropdown" href="#" data-bind="click: do_diff_list">
+                          <i class="icon-resize-vertical"></i> Diff
+                          <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu diff-list" data-bind="foreach: diffTitles">
+                          <li>
+                            <a data-bind="
+                              css: diff_class,
+                              html: title,
+                              click: $parent.show_diff.bind($data, $element),
+                              event: {
+                                mouseover: $parent.fill_diff_list.bind($data, $element),
+                                mouseout: $parent.unfill_diff_list.bind($data, $element)
+                              }" href="#"></a>
+                          </li>
+                        </ul>
+                      </div>
+                      <button data-bind="visible: checkbox_count() > 0, click: taskJump, css: {'disabled': !hasTask()}" class="wip-jump btn" style="float: left">
+                        <i class="icon-ok"></i> Task (<span data-bind="text: checked_count"></span>/<span data-bind="text: checkbox_count"></span>)
+                      </button>
+                      <button data-bind="click: wipJump, visible: hasWip" class="wip-jump btn btn-danger" style="float: left; display: none">
+                        <i class="icon-fire icon-white"></i> WIP <span data-bind="visible: wipCount() > 1">(<span data-bind="text: wipCount"></span>)</span>
+                      </button>
+                      <span class="text-date" data-bind="text: latest_text().date_name, css: {'writing-name': update_timer() != null}"></span>
+                      <span data-bind="visible: !is_memo_empty(), text: bytes" class="memo-bytes"></span>
+                      <div class="clearfix"></div>
+                    </div>
+                    <div class="memo-control-dummy" style="display:none;"></div>
+                    <textarea data-bind="
+                      textInput: edit_text,
+                      textcomplete: true,
+                      autofit: true,
+                      dropzoneEdit: true,
+                      event: {
+                        dblclick: function(data, event){ displaySpecificRow(data, event, $element) },
+                        click: function(data, event){ return clickOnCodeArea(data, event, $element) },
+                        keydown: function(data, event){ return keydownOnCodeArea(data, event, $element)},
+                        keyup: function(data, event){ return keyupOnCodeArea(data, event, $element)},
+                        select: function(data, event){ selectText(data, event, $element)}
+                      }" class="code code-unselect" style="display: none" placeholder="Write here"></textarea>
+                    <div data-bind="visible: show_empty_alert, event: {dblclick: do_edit}" class="memo-alert alert alert-info">
+                      This is a real-time shared memo area.<br>You can edit this by Press "Edit" Button or double click here.
+                    </div>
+                    <pre class="code-out-base" data-bind="decora: true">
+                      <div class="code-out" data-bind="
+                        dropzoneDisp: true,
+                        sortableMemo: {items: 'tr.code-out-tr', cancel: 'tr.fixity'},
+                        event: {dblclick: function(data, event){ editMemo(data, event, $element) }},
+                        decoHtml: display_text">
+                      </div>
+                      <div class="diff-view" style="display: none"></div>
+                    </pre>
+                  </div>
+                  <div class="move-to-blog" data-bind="visible: is_shown_move_to_blog" style="display:none">
+                    <button class="btn btn-success" data-bind="click: moveToBlog"><i class="icon-share-alt icon-white"></i> Move To Blog</button>
+                  </div>
+                </div><!-- end foreach -->
+              </div>
+            </div>
+            <footer>
+              <span>© 2017 Naoki KODAMA. All rights reserved.</span>
+            </footer>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="settings_modal" data-bind="with: settingViewModel" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+        <h3 id="myModalLabel">Settings</h3>
+      </div>
+      <div class="modal-body">
+        <div id="settings_memo">
+          <form class="form-horizontal">
+            <div class="control-group">
+              <legend>Personal Settings</legend>
+              <label class="control-label">Show notifications</label>
+              <div class="controls">
+                <label class="radio inline">
+                  <input type="radio" name="notificaton" value="disable" data-bind="checked: notificationMode" /> Disable
+                </label>
+                <label class="radio inline">
+                  <input type="radio" name="notificaton" value="true" data-bind="checked: notificationMode" /> All
+                </label>
+                <label class="radio inline">
+                  <input type="radio" name="notificaton" value="mention" data-bind="checked: notificationMode" /> Mention only
+                </label>
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label">Close notification in</label>
+              <div class="controls">
+                <select class="span1" data-bind="value: notificationSeconds">
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                  <option value="7">7</option>
+                  <option value="8">8</option>
+                  <option value="9">9</option>
+                  <option value="10">10</option>
+                  <option value="15">15</option>
+                  <option value="30">30</option>
+                </select>
+                seconds.
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label">Notification sound</label>
+              <div class="controls">
+                <label class="radio inline">
+                  <input type="radio" name="notificaton-sound" value="off" data-bind="checked: notificationSoundMode"> Off
+                </label>
+                <label class="radio inline">
+                  <input type="radio" name="notificaton-sound" value="on" data-bind="checked: notificationSoundMode"> On
+                </label>
+                <select class="span2" style="margin-left: 5px" data-bind="options: notificationSounds,
+                                                 optionsText: 'dispName',
+                                                 optionsValue: 'alias',
+                                                 value: selectedNotiSound,
+                                                 enable: notificationSoundMode() == 'on'">
+                </select>
+                <button class="btn" data-bind="click: playNotificationSound"><i class="icon-volume-up"></i></button>
+              </div>
+              <div class="controls" style="margin-top: 5px" data-bind="visible: selectedNotiSound() == 'up'">
+                <div class="input-append">
+                  <input type="text" id="upload_sound_name" data-bind="
+                    textInput: uploadedSound,
+                    dropzoneSetting: {
+                      fileTarget: '#upload_sound',
+                      action: function(fileName){ uploadedSound(fileName.replace('/uploads/',''));}
+                    }" placeholder="xxxx.mp3"></input>
+                  <button data-bind="click: upload_sound" class="btn btn-small"><i class="icon-file"></i></button>
+                </div>
+                <input type="file" id="upload_sound" name="file" style="display:none" accept=".mp3"></input>
+              </div>
+            </div>
+
+            <div class="control-group" id="avatar_setting">
+              <label class="control-label">Avatar</label>
+              <div class="controls">
+                <div class="input-append">
+                  <input type="text" id="avatar" data-bind="
+                    textInput: avatar,
+                    dropzoneSetting: {
+                      fileTarget: '#upload_avatar',
+                      action: function(fileName){ avatar(fileName);}
+                    }" placeholder="xxxx.jpg (option)"></input>
+                  <button data-bind="click: set_avatar" class="btn">Set</button>
+                  <button data-bind="click: upload_avatar" class="btn btn-small"><i class="icon-file"></i></button>
+                  <img data-bind="attr: {src: avatar}" class="avatar">
+                </div>
+                <input type="file" id="upload_avatar" name="file" style="display:none" accept="image/gif,image/jpeg,image/png"></input>
+              </div>
+            </div>
+            <div class="control-group send-message-key-radio">
+              <label class="control-label">Send Message Key</label>
+              <div class="controls">
+                <label class="radio inline">
+                  <input type="radio" name="sendkey" id="send_enter" value="enter" data-bind="checked: sendKey"> Enter
+                </label>
+                <label class="radio inline">
+                  <input type="radio" name="sendkey" id="send_ctrl" value="ctrl"   data-bind="checked: sendKey"> Ctrl+Enter
+                </label>
+                <label class="radio inline">
+                  <input type="radio" name="sendkey" id="send_shift" value="shift" data-bind="checked: sendKey"> Shift+Enter
+                </label>
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label">Memo tab style</label>
+              <div class="controls">
+                <label class="radio inline">
+                  <input type="radio" name="memoTabStyle" value="horizontal" data-bind="checked: memoTabStyle"> Horizontal
+                </label>
+                <label class="radio inline">
+                  <input type="radio" name="memoTabStyle" value="vertical" data-bind="checked: memoTabStyle"> Vertical
+                </label>
+              </div>
+            </div>
+            <div class="control-group">
+              <legend>System Settings</legend>
+
+              <label class="control-label">Enable chat room</label>
+              <div class="controls">
+                <!-- ko with: $parent.chatController -->
+                <select id="chat_number" class="span1" data-bind="
+                  value: chatNumber,
+                  event: {change: changeChatNumber}
+                  ">
+                  <!-- ko foreach: chatMaxNumber -->
+                  <option data-bind="text: no, attr: {value: no}"></option>
+                  <!-- /ko -->
+                </select>
+                <!-- /ko -->
+                rooms.
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label">Enable share memo</label>
+              <div class="controls">
+                <!-- ko with: $parent.memoController -->
+                <select id="memo_number" class="span1" data-bind="
+                  value: memo_number,
+                  event: {change: change_memo_number}
+                  ">
+                  <!-- ko foreach: memoViewModels -->
+                  <option data-bind="text: no, attr: {value: no}"></option>
+                  <!-- /ko -->
+                </select>
+                <!-- /ko -->
+                tabs.
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a href="#" class="btn" aria-hidden="true" data-dismiss="modal" >Close</a>
+      </div>
+    </div>
+
+    <div id ="diff_controller" data-bind="with: memoController" style="display: none">
+      <div id="move_to_diff">
+        <button data-bind="click: move_diff" class="btn btn-success"><i class="icon-arrow-down icon-white"></i> Next Diff</button>
+      </div>
+      <div id="diff_done">
+        <button data-bind="click: done_diff" class="btn btn-success"><i class="icon-ok icon-white"></i> Done</button>
+      </div>
+      <div id="restore">
+        <button data-bind="click: restore" class="btn btn-danger"><i class="icon-arrow-left icon-white"></i> Restore</button>
+      </div>
+    </div>
+
+    <div id="memo_scroll_top" data-bind="with: memoController" style="display: none">
+      <button data-bind="click: top" class="btn btn-default"><i class="icon-arrow-up icon-black"></i></button>
+    </div>
+
+    <div id="loading">
+      <img src="img/blog_loader.gif" >
+    </div>
+
+    <div id="share_memo_pre_tmp"></div>
+
+  </body>
+</html>
+
