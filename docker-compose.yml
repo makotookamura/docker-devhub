@@ -2,7 +2,7 @@ version: '2'
 services:
 
   devhub:
-    image: makotookamura/docker-devhub
+    image: nrisystemtechno/docker-devhub
     restart: always
     environment:
       - DEVHUB_USER= # user name for basic authentification
