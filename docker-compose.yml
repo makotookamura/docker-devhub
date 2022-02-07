@@ -1,8 +1,8 @@
-version: '2'
-services:
+version: '3'
 
+services:
   devhub:
-    image: nrisystemtechno/docker-devhub
+    build: .
     restart: always
     environment:
       - DEVHUB_USER= # user name for basic authentification
